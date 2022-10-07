@@ -57,3 +57,42 @@ INSERT INTO airline (carrier_code, airline_name, country_code) VALUES ('BA', 'Br
 INSERT INTO airline (carrier_code, airline_name, country_code) VALUES ('AF', 'Air France', 'FR');
 INSERT INTO airline (carrier_code, airline_name, country_code) VALUES ('LH', 'Luftansa Air', 'DE');
 INSERT INTO airline (carrier_code, airline_name, country_code) VALUES ('AZ', 'Air Italia', 'IT');
+
+
+--- Create AIRPORT table (4 of 17)
+CREATE TABLE airport (
+  airport_code VARCHAR(3) NOT NULL PRIMARY KEY,
+  airport_name VARCHAR (50) NOT NULL,
+  city_name VARCHAR(30) NOT NULL,
+  airport_tax FLOAT(10,4),
+  country_code VARCHAR(2)
+);
+--- Insert data into AIRPORT table
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('YHM', 'John C. Munro Hamilton', 'Toronto', 25, 'CA');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('YTZ', 'Billy Bishop City A/P', 'Toronto', 15, 'CA');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('YYZ', 'Lester B. Pearson Intl', 'Toronto', 25, 'CA');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('YUL', 'Pierre E.Trudeau Intl', 'Montreal', , 'CA');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('YMX', 'Mirabel Intl', 'Montreal', , 'CA');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('YHU', 'St-Hubert', 'Montreal', , 'CA');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('JFK', 'John F Kennedy Intl', 'New York', , 'US');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('LGA', 'LaGuardia', 'New York', , 'US');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('EWR', 'Newark Liberty Intl', 'New York', , 'US');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('MDW', 'Midway International', 'Chicago', , 'US');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('ORD', 'O Hare International', 'Chicago', , 'US');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('LTN', 'Luton', 'London', , 'UK');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('LHR', 'Heathrow', 'London', , 'UK');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('LCY', 'London City', 'London', , 'UK');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('STN', 'Stansted', 'London', , 'UK');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('SEN', 'Southend', 'London', , 'UK');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('LGW', 'Gatwick', 'London', , 'UK');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('EDI', 'Edinburgh Intl', 'Edinburgh', , 'UK');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('CDG', 'Charles de Gaulle', 'Paris', , 'FR');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('ORY', 'Orly', 'Paris', , 'FR');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('BVA', 'Beauvais', 'Paris', , 'FR');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('NCE', 'Cote d Azur', 'Nice', , 'FR');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('CGN', 'Cologne Bonn Airport', 'Bonn', , 'DE');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('BER', 'Brandenburg', 'Berlin', , 'DE');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('FCO', 'Fiumicino', 'Rome', , 'IT');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('CIA', 'Ciampino', 'Rome', , 'IT');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('APF', 'Municipal', 'Naples', , 'IT');
+INSERT INTO airport (airport_code, airport_name, city_name, airport_tax, country_code) VALUES ('NAP', 'Capodichino', 'Naples', , 'IT');
