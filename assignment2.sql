@@ -374,48 +374,283 @@ WHERE booking_ref = 'AC01X1Y2Z3' /* given data */
 --- QUERY #4: Check available flights for a customer
 
 SELECT
-  carrier_code, flight_no, date_dep, date_arr
-FROM flight_route fr
-LEFT JOIN flight_instance first_name
-ON
-
-WHERE
-fr.airport_dep = 'YYZ'
-AND fr.airport_arr = 'EWR'
-AND DATE(date_dep) > DATE('2022-10-01')
-AND DATE(date_arr) < DATE('2022-10-31')
-;
-
---- attempt
-SELECT
-  fr.carrier_code, fr.flight_no, fr.valid_from, fr.valid_to,
-  fr.time_dep, fr.airport_dep, 
-  fr.time_arr, fr.arr_nextday, fr.airport_arr,
-  fb.class_id,
-  COUNT(p_customer_id) AS FC_seats
-FROM flight_route fr
-WHERE
-fr.airport_dep = 'YYZ'
-AND fr.airport_arr = 'EWR'
-
---- trial
-SELECT 
-  carrier_code, flight_no, date_dep, date_arr,
-  class_name,
-  seats_FC, seats_BC, seats_EC,
-  COUNT(p_customer_id) AS booked_customers
-FROM flight_booking fb
+  fi.carrier_code, fi.flight_no,
+  fr.airport_dep, fi.date_dep, fr.time_dep, fr.airport_dep,
+  fr.airport_arr, fi.date_arr, fr.time_arr, fr.arr_nextday, 
+  fr.duration,
+  fr.seats_EC AS total_seats_EC,
+  COUNT(p.p_customer_id) AS booked_seats_EC
+FROM flight_instance fi
+LEFT JOIN flight_route fr
+  ON fi.carrier_code = fr.carrier_code
+  AND fi.flight_no = fr.flight_no
 LEFT JOIN itinerary i
-  ON fb.booking_ref = i.booking_ref
-LEFT JOIN class
-  ON fb.class_id = class.class_id
-LEFT JOIN passenger pass
-  ON i.booking_ref = pass.booking_ref
-  AND i.leg_no = pass.leg_no
-WHERE 
-i.carrier_code = 'AC' /* given data */
-AND i.flight_no = '874' /* given data */
-AND i.date_dep = '2022-10-08' /* given data */
-AND i.date_arr = '2022-10-08' /* given data */
-GROUP BY class_name
+  ON fi.carrier_code = i.carrier_code
+  AND fi.flight_no = i.flight_no
+  AND fi.date_dep = i.date_dep
+  AND fi.date_arr = i.date_arr
+LEFT JOIN passenger p
+  ON i.booking_ref = p.booking_ref
+  AND i.leg_no = p.leg_no
+LEFT JOIN flight_booking fb
+  ON i.booking_ref = fb.booking_ref
+WHERE
+  fb.booking_status = 'booked'
+  AND fb.class_id = 'EC'
+  AND DATE(fi.date_dep) >= '2022-09-30'
+  AND DATE(fi.date_arr) <= '2022-12-31'
+  AND fr.airport_dep = 'YUL'
+  AND fr.airport_arr = 'CDG'
+GROUP BY fi.carrier_code, fi.flight_no,
+  fr.airport_dep, fi.date_dep, fr.time_dep, fr.airport_dep,
+  fr.airport_arr, fi.date_arr, fr.time_arr, fr.arr_nextday, 
+  fr.duration,
+  fr.seats_EC;
+
+--- TEST for EC (no fare)
+SELECT
+  fi.carrier_code, fi.flight_no,
+  fr.airport_dep, fi.date_dep, fr.time_dep,
+  fr.airport_arr, fi.date_arr, fr.time_arr, fr.arr_nextday, 
+  fr.duration,
+  fr.seats_EC AS total_seats_EC,
+  COUNT(p.p_customer_id) AS booked_seats_EC,
+  (fr.seats_EC - COUNT(p.p_customer_id)) AS available_seats_EC
+FROM flight_instance fi
+LEFT JOIN flight_route fr
+  ON fi.carrier_code = fr.carrier_code
+  AND fi.flight_no = fr.flight_no
+LEFT JOIN itinerary i
+  ON fi.carrier_code = i.carrier_code
+  AND fi.flight_no = i.flight_no
+  AND fi.date_dep = i.date_dep
+  AND fi.date_arr = i.date_arr
+LEFT JOIN passenger p
+  ON i.booking_ref = p.booking_ref
+  AND i.leg_no = p.leg_no
+LEFT JOIN flight_booking fb
+  ON i.booking_ref = fb.booking_ref
+WHERE
+  fr.airport_dep = 'YUL'
+  AND fr.airport_arr = 'CDG'
+  AND DATE(fi.date_dep) >= '2022-09-30'
+  AND DATE(fi.date_arr) <= '2022-12-31'
+  AND DATE(fr.valid_from) <= '2022-09-30'
+  AND DATE(fr.valid_to) >= '2022-12-31'
+GROUP BY fi.carrier_code, fi.flight_no,
+  fr.airport_dep, fi.date_dep, fr.time_dep, fr.airport_dep,
+  fr.airport_arr, fi.date_arr, fr.time_arr, fr.arr_nextday, 
+  fr.duration,
+  fr.seats_EC;
+
+--- TEST FOR EC with fare
+SELECT
+  fi.carrier_code, fi.flight_no,
+  fr.airport_dep, fi.date_dep, fr.time_dep,
+  fr.airport_arr, fi.date_arr, fr.time_arr, fr.arr_nextday, 
+  fr.duration,
+  fr.seats_EC AS total_seats_EC,
+  COUNT(p.p_customer_id) AS booked_seats_EC,
+  (fr.seats_EC - COUNT(p.p_customer_id)) AS available_seats_EC,
+  CONCAT(f.from_ccy, " ", FORMAT(fi.fare_basic,2)) AS fare_EC1,
+  CONCAT(f.to_ccy, " ", FORMAT(fi.fare_basic * f.exch_rate,2)) AS fare_EC2
+FROM flight_instance fi
+LEFT JOIN airline a
+  ON fi.carrier_code = a.carrier_code
+LEFT JOIN country c
+  ON a.country_code = c.country_code
+LEFT JOIN forex f
+  ON c.currency_code = f.from_ccy 
+LEFT JOIN flight_route fr
+  ON fi.carrier_code = fr.carrier_code
+  AND fi.flight_no = fr.flight_no
+LEFT JOIN itinerary i
+  ON fi.carrier_code = i.carrier_code
+  AND fi.flight_no = i.flight_no
+  AND fi.date_dep = i.date_dep
+  AND fi.date_arr = i.date_arr
+LEFT JOIN passenger p
+  ON i.booking_ref = p.booking_ref
+  AND i.leg_no = p.leg_no
+LEFT JOIN flight_booking fb
+  ON i.booking_ref = fb.booking_ref
+WHERE
+  fr.airport_dep = 'YUL'
+  AND fr.airport_arr = 'CDG'
+  AND DATE(fi.date_dep) >= '2022-09-30'
+  AND DATE(fi.date_arr) <= '2022-12-31'
+  AND DATE(fr.valid_from) <= '2022-09-30'
+  AND DATE(fr.valid_to) >= '2022-12-31'
+  AND f.to_ccy = 'USD'
+GROUP BY fi.carrier_code, fi.flight_no,
+  fr.airport_dep, fi.date_dep, fr.time_dep, fr.airport_dep,
+  fr.airport_arr, fi.date_arr, fr.time_arr, fr.arr_nextday, 
+  fr.duration,
+  fr.seats_EC, f.exch_rate;
+
+
+--- QUERY #5: Add a second number for a customer
+-- Step1: Get passport number or customer's name. Verify other info to confirm identity. Determine customerID.
+SELECT * FROM customer
+WHERE passport_no = 'AB123456';
+-- or
+SELECT * FROM customer
+WHERE last_name = 'Bouchard' AND first_name = 'Oliver';
+-- Step2: Insert second phone record for the customer
+INSERT INTO phone (customer_id,	phone_seq,	p_type,	p_country_code,	area_code,	local_number)
+VALUES ('UK0000000001', '2', 'mobile', '1', '404', '9876543');
+
+--- QUERY #6: names of all the people that will be arriving at an airport at one of the cities on a particular day
+SELECT
+a.city_name, i.date_arr,
+a.airport_name, i.carrier_code, i.flight_no,
+cust.last_name, cust.first_name, cust.middle_name
+FROM customer cust
+RIGHT JOIN passenger p
+ON cust.customer_id = p.p_customer_id
+LEFT JOIN itinerary i
+ON p.booking_ref = i.booking_ref AND p.leg_no = i.leg_no 
+LEFT JOIN flight_route fr
+ON i.carrier_code = fr.carrier_code AND i.flight_no = fr.flight_no
+LEFT JOIN airport a
+ON a.airport_code = fr.airport_arr
+WHERE DATE(fr.valid_to) >= '2022-10-08' 
+AND a.city_name = 'Paris' AND i.date_arr = '2022-10-08'
+ORDER BY cust.last_name, cust.first_name, cust.middle_name
 ;
+
+--- QUERY #7: update all flights for a given city to be delayed due to bad weather
+-- Update departing flights from Paris on 2022-10-31:
+UPDATE flight_instance fi
+LEFT JOIN flight_route fr
+ON fi.carrier_code = fr.carrier_code AND fi.flight_no = fr.flight_no
+LEFT JOIN airport a
+ON fr.airport_dep = a.airport_code
+SET fi.flight_status = 'on-schedule'
+WHERE
+DATE(fr.valid_to) >= '2022-10-31'
+AND a.city_name ='Paris'
+AND fi.date_dep = '2022-10-31'
+;
+-- Update arriving flights from Paris on 2022-10-08:
+UPDATE flight_instance fi
+LEFT JOIN flight_route fr
+ON fi.carrier_code = fr.carrier_code AND fi.flight_no = fr.flight_no
+LEFT JOIN airport a
+ON fr.airport_arr = a.airport_code
+SET fi.flight_status = 'on-schedule'
+WHERE
+DATE(fr.valid_to) >= '2022-10-08'
+AND a.city_name ='Paris'
+AND fi.date_dep = '2022-10-08'
+;
+
+--- QUERY #8: remove a flight that has booked passengers
+-- Step 1: Get list of all customers for a flight with booked passengers, including email address.
+-- This list will be used to notify affected customers.
+
+SELECT i.carrier_code, i.flight_no, fr.airport_dep, i.date_dep, fr.time_dep,  
+  fr.airport_arr, i.date_arr, fr.time_arr, fr.arr_nextday,
+  class.class_name, c.last_name, c.first_name, e.email_address 
+FROM flight_booking fb
+LEFT JOIN itinerary i ON fb.booking_ref = i.booking_ref
+LEFT JOIN class ON fb.class_id = class.class_id
+LEFT JOIN flight_route fr
+  ON i.carrier_code = fr.carrier_code
+  AND i.flight_no = fr.flight_no
+  AND i.date_dep BETWEEN valid_from AND valid_to
+LEFT JOIN passenger p
+  ON i.booking_ref = p.booking_ref
+  AND i.leg_no = p.leg_no
+LEFT JOIN customer c ON p.p_customer_id = c.customer_id
+LEFT JOIN email e ON p.p_customer_id = e.customer_id
+WHERE fb.booking_status = 'booked'
+AND DATE(i.date_dep) > CURDATE();
+
+--- Step 2: Once all passengers have been notified and any necessary action taken,
+--- proceed with deletion of flight in the flight_instance table using
+--- carrier code, flight number, date of departure, date of arrival
+
+DELETE FROM flight_instance
+WHERE
+  carrier_code = /* carrier code */
+  AND flight_no = /* flight no */
+  AND date_dep = /* date of departure */
+  date_arr = /* date of arrival */
+;
+
+--- QUERY #9
+
+-- Step 1: Get total available seats for all scheduled flights for the month.
+SELECT SUM(seats_EC + seats_BC + seats_FC) AS total_seats_this_month
+FROM flight_instance fi
+LEFT JOIN flight_route fr
+  ON fi.carrier_code = fr.carrier_code AND fi.flight_no = fr.flight_no
+LEFT JOIN itinerary i
+  ON fi.carrier_code = i.carrier_code AND fi.flight_no = i.flight_no AND fi.date_dep = i.date_dep
+WHERE
+  fi.carrier_code = 'AC'
+  AND DATE(fi.date_dep) BETWEEN '2022-10-01' AND '2022-10-31'
+  AND DATE(fi.date_dep) BETWEEN valid_from AND valid_to;
+
+-- Step 2: Get total booked seats for all schedule flights for the month.
+-- Note: This cannot be done in the same query because the condition [booking_status = 'booked'] cannot be used for Step 1.
+-- Doing so will exclude the flights where no seats have yet been sold.
+-- Use results from step 1 and step 2 to get the rate of booked seats/available
+SELECT COUNT(p.p_customer_id) AS booked_seats_this_month
+FROM flight_instance fi
+LEFT JOIN flight_route fr
+  ON fi.carrier_code = fr.carrier_code AND fi.flight_no = fr.flight_no
+LEFT JOIN itinerary i
+  ON fi.carrier_code = i.carrier_code AND fi.flight_no = i.flight_no AND fi.date_dep = i.date_dep
+LEFT JOIN flight_booking fb
+  ON i.booking_ref = fb.booking_ref
+LEFT JOIN passenger p
+  ON i.booking_ref = p.booking_ref AND i.leg_no = p.leg_no
+WHERE
+  fb.booking_status = 'booked'
+  AND fi.carrier_code = 'AC'
+  AND DATE(fi.date_dep) BETWEEN '2022-10-01' AND '2022-10-31'
+  AND DATE(fi.date_dep) BETWEEN valid_from AND valid_to;
+
+-- Step 3: Calculate total revenue based on fare per passenger on all booked flights this month
+-- Fare per passenger is based on basic fare, flight class, and fare type (adult, child, infant)
+-- include add-on fees for seat and meal
+
+SELECT
+  FORMAT(SUM((fi.fare_basic * f.f_multiplier * c.c_multiplier)
+  + IF (prem_meal ='Y', addon_meal, 0)
+  + IF (prem_seat = 'Y', addon_seat, 0)),2) AS total_revenue_this_month
+FROM flight_instance fi
+LEFT JOIN flight_route fr
+  ON fi.carrier_code = fr.carrier_code AND fi.flight_no = fr.flight_no
+LEFT JOIN itinerary i
+  ON fi.carrier_code = i.carrier_code AND fi.flight_no = i.flight_no AND fi.date_dep = i.date_dep
+LEFT JOIN flight_booking fb
+  ON i.booking_ref = fb.booking_ref
+LEFT JOIN passenger p
+  ON i.booking_ref = p.booking_ref AND i.leg_no = p.leg_no
+LEFT JOIN class c
+  ON fb.class_id = c.class_id
+LEFT JOIN fare f
+  ON p.fare_id = f.fare_id
+WHERE
+  fb.booking_status = 'booked'
+  AND fi.carrier_code = 'AC'
+  AND DATE(fi.date_dep) BETWEEN '2022-10-01' AND '2022-10-31'
+  AND DATE(fi.date_dep) BETWEEN valid_from AND valid_to;
+
+  --- Apply CHECKS
+
+  -- email
+  ALTER TABLE email
+  ADD CONSTRAINT chk_email CHECK (email_address LIKE '%_@_%._%');
+
+ALTER table customer
+ADD CONSTRAINT u_passport_no UNIQUE (passport_no);
+
+ALTER TABLE passenger
+ALTER prem_meal SET DEFAULT 'N';
+
+ALTER TABLE passenger
+ALTER prem_seat SET DEFAULT 'N';
